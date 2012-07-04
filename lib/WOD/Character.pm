@@ -202,6 +202,23 @@ sub _roles {
    return @template_role, @merit_roles,
 }
 
+
+sub _reconstruct {}
+
+has _original_args => (
+   is => 'rw',
+   required => 1,
+);
+
+sub BUILDARGS {
+   my $self = shift;
+
+   my $ret = $self->next::method(@_);
+   $ret->{_original_args} = $ret;
+
+   $ret
+}
+
 sub BUILD {
    my $self = shift;
 
@@ -215,18 +232,17 @@ sub BUILD {
          }
       }
    }
+
+   $self->_reconstruct;
 }
 
 sub from_data_structure {
    my ($class, $ds) = @_;
 
    my $ret = $class->new(
-      name => $ds->{name},
-      skill_specialties => $ds->{skill_specialties},
-      supernatural_template => $ds->{supernatural_template},
-      merits => $ds->{merits},
-      %{$ds->{attributes}},
-      %{$ds->{skills}},
+      %{delete $ds->{attributes}||{}},
+      %{delete $ds->{skills}||{}},
+      %$ds,
    );
 
    return $ret
