@@ -1,0 +1,40 @@
+#!/usr/bin/env perl
+
+use 5.16.0;
+use warnings;
+use lib 'lib';
+use WOD::Character;
+use JSON::XS;
+use Devel::Dwarn;
+
+use Getopt::Long::Descriptive;
+
+my ($opt, $usage) = describe_options(
+  'for-characters %o',
+  [ 'print-names', 'print character names for each character' ],
+  [ 'methods=s', 'methods to call' ],
+  [ 'code|e=s', 'code to run' ],
+  [],
+  [ 'help|h|?',       'print usage message and exit' ],
+);
+
+print($usage->text), exit if $opt->help;
+
+while (<>) {
+   chomp;
+   use autodie;
+   open my $fh, '<', $_;
+   my $char = WOD::Character->from_data_structure(
+      decode_json( do { local $/ = undef; <$fh> })
+   );
+
+   say $char->name if $opt->print_names;
+   local $_ = $char;
+   if (my $code = $opt->code) {
+      eval $code;
+      die $@ if $@;
+   } elsif (my $methods = $opt->methods) {
+      my @methods = split qr/,/, $methods;
+      say join ' ', map $char->$_, @methods
+   }
+}
