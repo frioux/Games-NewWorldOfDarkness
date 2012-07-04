@@ -171,20 +171,38 @@ sub manip { goto \&manipulation }
 sub stam { goto \&stamina }
 sub comp { goto \&composure }
 
+has merits => (
+   is => 'rw',
+   default => quote_sub q{ {} },
+);
+
+sub _roles {
+   my $self = shift;
+
+   my $merits = $self->merits;
+   map $self->_merit_to_rolename($_, $merits->{$_}), keys %$merits
+}
+
 sub from_data_structure {
    my ($class, $ds) = @_;
 
    my $ret = $class->new(
       name => $ds->{name},
       skill_specialties => $ds->{skill_specialties},
+      merits => $ds->{merits},
       %{$ds->{attributes}},
       %{$ds->{skills}},
    );
 
-   for my $merit (keys %{$ds->{merits} || {}}) {
-      Role::Tiny->apply_roles_to_object(
-         $ret, $class->_merit_to_rolename($merit, $ds->{merits}{$merit})
-      )
+   my $changed = 1;
+   while ($changed) {
+      $changed = 0;
+      for my $role ($ret->_roles) {
+         unless ($ret->does($role)) {
+            Role::Tiny->apply_roles_to_object($ret, $role);
+            $changed = 1
+         }
+      }
    }
 
    return $ret
