@@ -38,6 +38,11 @@ has size => (
    default => quote_sub q{ 5 },
 );
 
+has morality => (
+   is => 'rw',
+   default => quote_sub q{ 7 },
+);
+
 sub speed { $_[0]->str + $_[0]->dex + 5 }
 sub initiative_mod { $_[0]->dex + $_[0]->comp }
 sub initiative { 1 + int(rand(10)) + $_[0]->initiative_mod }
@@ -176,11 +181,40 @@ has merits => (
    default => quote_sub q{ {} },
 );
 
+has supernatural_template => (
+   is => 'rw',
+);
+
 sub _roles {
    my $self = shift;
 
-   my $merits = $self->merits;
-   map $self->_merit_to_rolename($_, $merits->{$_}), keys %$merits
+   my @merit_roles = do {
+      my $merits = $self->merits;
+      map $self->_merit_to_rolename($_, $merits->{$_}), keys %$merits
+   };
+
+   my @template_role = do {
+      if (my $t = $self->supernatural_template) {
+         ($self->_template_to_rolename($t))
+      } else { () }
+   };
+
+   return @template_role, @merit_roles,
+}
+
+sub BUILD {
+   my $self = shift;
+
+   my $changed = 1;
+   while ($changed) {
+      $changed = 0;
+      for my $role ($self->_roles) {
+         unless ($self->does($role)) {
+            Role::Tiny->apply_roles_to_object($self, $role);
+            $changed = 1
+         }
+      }
+   }
 }
 
 sub from_data_structure {
@@ -189,23 +223,17 @@ sub from_data_structure {
    my $ret = $class->new(
       name => $ds->{name},
       skill_specialties => $ds->{skill_specialties},
+      supernatural_template => $ds->{supernatural_template},
       merits => $ds->{merits},
       %{$ds->{attributes}},
       %{$ds->{skills}},
    );
 
-   my $changed = 1;
-   while ($changed) {
-      $changed = 0;
-      for my $role ($ret->_roles) {
-         unless ($ret->does($role)) {
-            Role::Tiny->apply_roles_to_object($ret, $role);
-            $changed = 1
-         }
-      }
-   }
-
    return $ret
+}
+
+sub _template_to_rolename {
+   "WOD::TraitFor::Character::Template::" . ucfirst $_[1]
 }
 
 sub _merit_to_rolename {
