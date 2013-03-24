@@ -359,4 +359,12 @@ sub skill_block {
    $_[0]->render_skill_category_block('social')
 }
 
+sub sheet {
+   return join $_[0]->newline,
+          $_[0]->name,
+          $_[0]->attribute_block,
+          $_[0]->skill_block,
+          '',
+}
+
 1;

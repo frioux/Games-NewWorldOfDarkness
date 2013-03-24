@@ -1,0 +1,17 @@
+#!/usr/bin/env perl
+
+use 5.16.0;
+use warnings;
+use rlib;
+use autodie;
+use WOD::Character;
+use JSON::XS;
+
+my $filename = shift or
+   die "filename is required\n";
+
+open my $fh, '<', $filename;
+print WOD::Character->from_data_structure(
+   decode_json( do { local $/ = undef; <$fh> })
+)->sheet;
+
