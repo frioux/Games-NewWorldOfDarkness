@@ -310,6 +310,17 @@ sub dice_pool {
    )
 }
 
+sub misc_block {
+   my $self = shift;
+
+   require Text::TabularDisplay;
+   my $tgen = Text::TabularDisplay->new;
+
+   $tgen->add(
+      'Max Health', $self->max_health,
+   )->render
+}
+
 sub attribute_block {
    my $self = shift;
 
@@ -363,6 +374,7 @@ sub sheet {
    return join $_[0]->newline,
           $_[0]->name,
           $_[0]->attribute_block,
+          $_[0]->misc_block,
           $_[0]->skill_block,
           '',
 }
